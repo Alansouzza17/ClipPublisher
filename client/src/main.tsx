@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import type { VideoItem, State } from './types';
 import './style.css';
 
-const api = '/api';
+const api = import.meta.env.VITE_API_URL || '/api';
 const base = (file: File): VideoItem => ({ id: crypto.randomUUID(), file, fileName:file.name, thumbnail:URL.createObjectURL(file), caption:'', mentions:'', hashtags:'', youtubeTitle:file.name.replace(/\.[^.]+$/, ''), youtubeDescription:'', publishToTikTok:true, publishToYouTube:false, statusTikTok:'idle', statusYouTube:'idle' });
 const fmt = (n:number) => new Intl.NumberFormat('pt-BR',{style:'unit',unit:'megabyte',maximumFractionDigits:1}).format(n/1024/1024);
 const stateLabel: Record<State,string> = {idle:'Pronto', uploading:'Enviando…', publishing:'Publicando…', published:'Publicado', failed:'Falha ao publicar'};

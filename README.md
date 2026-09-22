@@ -17,6 +17,8 @@ O frontend fica em `http://localhost:5173` e o servidor em `http://localhost:300
 
 `PORT`, `FRONTEND_URL`, `MAX_UPLOAD_BYTES` e `TEMP_FILE_MAX_AGE_HOURS` controlam o servidor. `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET` e `TIKTOK_REDIRECT_URI` são do TikTok. `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` são do OAuth do Google; os aliases `YOUTUBE_CLIENT_ID` e `YOUTUBE_CLIENT_SECRET` também são aceitos. Nunca exponha esses valores nem o arquivo `storage/tokens.enc`.
 
+Em hospedagem gerenciada, defina `DATA_DIR` para o ponto de montagem de um disco persistente (por exemplo, `/var/data`).
+
 Os tokens são criptografados localmente com AES-256-GCM no servidor; não são enviados ao browser e os logs ocultam campos de token. Para trocar a chave, reconecte as duas plataformas.
 
 ## TikTok
