@@ -1,0 +1,5 @@
+import dotenv from 'dotenv'; import path from 'node:path'; import {fileURLToPath} from 'node:url';
+// The backend runs with `server/` as its working directory when invoked through npm workspaces.
+// Resolve the root `.env` explicitly so OAuth credentials are never silently read as empty.
+dotenv.config({path:path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../.env')});
+export const config={port:Number(process.env.PORT||3001),frontendUrl:process.env.FRONTEND_URL||'http://localhost:5173',maxUploadBytes:Number(process.env.MAX_UPLOAD_BYTES||1073741824),tempDir:path.resolve('storage','uploads'),tokenFile:path.resolve('storage','tokens.enc'),tokenKey:process.env.TOKEN_ENCRYPTION_KEY||'',tiktok:{key:process.env.TIKTOK_CLIENT_KEY||'',secret:process.env.TIKTOK_CLIENT_SECRET||'',redirect:process.env.TIKTOK_REDIRECT_URI||''},google:{id:process.env.GOOGLE_CLIENT_ID||process.env.YOUTUBE_CLIENT_ID||'',secret:process.env.GOOGLE_CLIENT_SECRET||process.env.YOUTUBE_CLIENT_SECRET||'',redirect:process.env.GOOGLE_REDIRECT_URI||''}};

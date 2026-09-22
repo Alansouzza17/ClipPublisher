@@ -1,0 +1,7 @@
+import crypto from 'node:crypto'; import fs from 'node:fs/promises'; import {config} from './config.js'; import type {Token} from './types.js';
+export const safeName=(name:string)=>`${crypto.randomUUID()}-${name.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-120)}`;
+const key=()=>crypto.createHash('sha256').update(config.tokenKey).digest();
+export async function saveTokens(platform:string,tokens:Token){if(!config.tokenKey)throw new Error('TOKEN_ENCRYPTION_KEY não configurada.'); await fs.mkdir('storage',{recursive:true}); let all:Record<string,Token>={};try{all=await readAll()}catch{} const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',key(),iv); const data=Buffer.concat([cipher.update(JSON.stringify({...all,[platform]:tokens})),cipher.final()]); await fs.writeFile(config.tokenFile,Buffer.concat([iv,cipher.getAuthTag(),data]));}
+async function readAll(){const raw=await fs.readFile(config.tokenFile);const d=crypto.createDecipheriv('aes-256-gcm',key(),raw.subarray(0,12));d.setAuthTag(raw.subarray(12,28));return JSON.parse(Buffer.concat([d.update(raw.subarray(28)),d.final()]).toString()) as Record<string,Token>}
+export async function getTokens(platform:string){try{return (await readAll())[platform]}catch{return undefined}}
+export const validateVideo=(name:string,mime:string,size:number)=>{if(size>config.maxUploadBytes)throw new Error('Arquivo excede o limite configurado.');if(!/\.(mp4|mov)$/i.test(name)||!['video/mp4','video/quicktime'].includes(mime))throw new Error('Somente MP4 e MOV são aceitos.');};

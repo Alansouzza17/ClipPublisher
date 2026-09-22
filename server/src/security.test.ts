@@ -1,0 +1,2 @@
+import {describe,it,expect} from 'vitest'; import {safeName,validateVideo} from './security.js';
+describe('validação de upload',()=>{it('aceita MP4',()=>expect(()=>validateVideo('clipe.mp4','video/mp4',100)).not.toThrow());it('rejeita extensão inválida',()=>expect(()=>validateVideo('clipe.exe','video/mp4',100)).toThrow(/MP4/));it('sanitiza nomes',()=>expect(safeName('../../segredo.mp4')).not.toContain('/'));});

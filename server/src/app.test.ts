@@ -1,0 +1,2 @@
+import {describe,it,expect} from 'vitest'; import {buildApp} from './index.js';
+describe('API',()=>{it('responde health sem credenciais',async()=>{const app=buildApp();const r=await app.inject('/api/health');expect(r.json()).toEqual({ok:true});await app.close()});it('rejeita publicação TikTok sem vídeo',async()=>{const app=buildApp();const r=await app.inject({method:'POST',url:'/api/publish/tiktok'});expect(r.statusCode).toBe(400);await app.close()})});

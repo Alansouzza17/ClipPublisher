@@ -1,0 +1,2 @@
+export type State = 'idle' | 'uploading' | 'publishing' | 'published' | 'failed';
+export interface VideoItem { id:string; file:File; fileName:string; thumbnail:string; duration?:number; caption:string; mentions:string; hashtags:string; youtubeTitle:string; youtubeDescription:string; publishToTikTok:boolean; publishToYouTube:boolean; statusTikTok:State; statusYouTube:State; tiktokUrl?:string; youtubeUrl?:string; errorTikTok?:string; errorYouTube?:string; }
