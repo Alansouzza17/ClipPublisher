@@ -1,5 +1,54 @@
-import Fastify from 'fastify'; import cors from '@fastify/cors'; import multipart from '@fastify/multipart'; import fs from 'node:fs/promises'; import path from 'node:path'; import {config} from './config.js'; import {safeName,validateVideo,getTokens} from './security.js'; import {tiktokAuthUrl,tiktokCallback,verifyState} from './oauth.js'; import {getTikTokCreatorInfo,getTikTokPublishStatus,publishTikTok} from './publishers.js';
+import Fastify from 'fastify'; import cors from '@fastify/cors'; import multipart from '@fastify/multipart'; import fs from 'node:fs/promises'; import path from 'node:path'; import {config} from './config.js'; import {safeName,validateVideo,getTokens} from './security.js'; import {
+  tiktokAuthUrl,
+  tiktokCallback,
+  tiktokConfigError,
+  verifyState,
+} from './oauth.js'; import {getTikTokCreatorInfo,getTikTokPublishStatus,publishTikTok} from './publishers.js';
 const pendingUploads=new Map<string,string>();
 export async function cleanOldUploads(){try{const maxAge=Number(process.env.TEMP_FILE_MAX_AGE_HOURS||24)*3_600_000;const files=await fs.readdir(config.tempDir);await Promise.all(files.map(async file=>{const target=path.join(config.tempDir,file);const stat=await fs.stat(target);if(stat.isFile()&&Date.now()-stat.mtimeMs>maxAge)await fs.unlink(target)}))}catch(e:any){if(e?.code!=='ENOENT')console.error('Falha ao limpar uploads temporários.')}}
-export function buildApp(){const app=Fastify({logger:{level:'info',redact:['req.headers.authorization','*.access_token','*.refresh_token']}});app.register(cors,{origin:config.frontendUrl});app.register(multipart,{limits:{fileSize:config.maxUploadBytes,files:1}});app.get('/api/health',async()=>({ok:true}));app.get('/api/connections',async()=>({tiktok:!!await getTokens('tiktok')}));app.get('/api/auth/tiktok/start',async(_req,res)=>res.redirect(tiktokAuthUrl()));app.get('/api/auth/tiktok/callback',async(req,res)=>{const q=req.query as any;if(!q.code||!verifyState(q.state,'tiktok'))return res.code(400).send('Autorização inválida ou expirada.');try{await tiktokCallback(q.code);return res.redirect(`${config.frontendUrl}?connected=tiktok`)}catch{return res.code(502).send('Não foi possível concluir a conexão. Confira client key, redirect URI e permissões TikTok.')}});app.get('/api/tiktok/creator',async(_req,res)=>{try{return await getTikTokCreatorInfo()}catch(e){return res.code(401).send({message:e instanceof Error?e.message:'TikTok não conectado.'})}});app.get('/api/tiktok/publish/:publishId',async(req,res)=>{try{const publishId=(req.params as any).publishId;const status=await getTikTokPublishStatus(publishId);if(status.status==='PUBLISH_COMPLETE'||status.status==='FAILED'){const file=pendingUploads.get(publishId);if(file){pendingUploads.delete(publishId);await fs.unlink(file).catch(()=>{})}}return status}catch(e){return res.code(400).send({message:e instanceof Error?e.message:'Não foi possível consultar a publicação.'})}});app.post('/api/publish/tiktok',async(req,res)=>{let temp='';try{const part=await req.file();if(!part)throw new Error('Envie um vídeo.');await fs.mkdir(config.tempDir,{recursive:true});temp=path.join(config.tempDir,safeName(part.filename));await fs.writeFile(temp,await part.toBuffer());const stat=await fs.stat(temp);validateVideo(part.filename,part.mimetype,stat.size);const metadata=JSON.parse((part.fields.metadata as any)?.value||'{}');const result=await publishTikTok(temp,stat.size,part.mimetype,metadata);if(result.publishId)pendingUploads.set(result.publishId,temp);return result}catch(error){return res.code(400).send({message:error instanceof Error?error.message:'Erro inesperado.'})}});return app}
+export function buildApp(){const app=Fastify({logger:{level:'info',redact:['req.headers.authorization','*.access_token','*.refresh_token']}});app.register(cors,{origin:config.frontendUrl});app.register(multipart,{limits:{fileSize:config.maxUploadBytes,files:1}});app.get('/api/health',async()=>({ok:true}));app.get('/api/connections',async()=>({tiktok:!!await getTokens('tiktok')}));app.get('/api/auth/tiktok/start', async (_req, res) => {
+  const problem = tiktokConfigError();
+
+  if (problem) {
+    return res
+      .code(500)
+      .type('text/plain')
+      .send(`Configuração TikTok inválida: ${problem}`);
+  }
+
+  return res.redirect(tiktokAuthUrl());
+});app.get('/api/auth/tiktok/callback', async (req, res) => {
+  const q = req.query as any;
+
+  if (q.error) {
+    return res
+      .code(400)
+      .type('text/plain')
+      .send(
+        `TikTok cancelou a autorização: ${q.error_description || q.error}`
+      );
+  }
+
+  if (!q.code || !verifyState(q.state, 'tiktok')) {
+    return res
+      .code(400)
+      .type('text/plain')
+      .send(
+        'Autorização inválida ou expirada. Se o servidor reiniciou durante o login, conecte novamente.'
+      );
+  }
+
+  try {
+    await tiktokCallback(q.code);
+
+    return res.redirect(`${config.frontendUrl}?connected=tiktok`);
+  } catch (e) {
+    app.log.error(e);
+
+    return res
+      .code(502)
+      .type('text/plain')
+      .send(e instanceof Error ? e.message : 'Erro desconhecido');
+  }
+});app.get('/api/tiktok/creator',async(_req,res)=>{try{return await getTikTokCreatorInfo()}catch(e){return res.code(401).send({message:e instanceof Error?e.message:'TikTok não conectado.'})}});app.get('/api/tiktok/publish/:publishId',async(req,res)=>{try{const publishId=(req.params as any).publishId;const status=await getTikTokPublishStatus(publishId);if(status.status==='PUBLISH_COMPLETE'||status.status==='FAILED'){const file=pendingUploads.get(publishId);if(file){pendingUploads.delete(publishId);await fs.unlink(file).catch(()=>{})}}return status}catch(e){return res.code(400).send({message:e instanceof Error?e.message:'Não foi possível consultar a publicação.'})}});app.post('/api/publish/tiktok',async(req,res)=>{let temp='';try{const part=await req.file();if(!part)throw new Error('Envie um vídeo.');await fs.mkdir(config.tempDir,{recursive:true});temp=path.join(config.tempDir,safeName(part.filename));await fs.writeFile(temp,await part.toBuffer());const stat=await fs.stat(temp);validateVideo(part.filename,part.mimetype,stat.size);const metadata=JSON.parse((part.fields.metadata as any)?.value||'{}');const result=await publishTikTok(temp,stat.size,part.mimetype,metadata);if(result.publishId)pendingUploads.set(result.publishId,temp);return result}catch(error){return res.code(400).send({message:error instanceof Error?error.message:'Erro inesperado.'})}});return app}
 const app=buildApp(); if(process.env.NODE_ENV!=='test'){cleanOldUploads();setInterval(cleanOldUploads,60*60_000).unref();app.listen({port:config.port,host:'0.0.0.0'}).catch(e=>{app.log.error(e);process.exit(1)});}
