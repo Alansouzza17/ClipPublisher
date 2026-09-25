@@ -5,11 +5,17 @@ const text=(m:PublishMetadata)=>[m.caption,m.mentions,m.hashtags].filter(Boolean
 export async function getTikTokCreatorInfo():Promise<CreatorInfo>{const token=await tiktokToken();const r=await fetch('https://open.tiktokapis.com/v2/post/publish/creator_info/query/',{method:'POST',headers:{Authorization:`Bearer ${token.accessToken}`,'Content-Type':'application/json; charset=UTF-8'}});const x:any=await r.json();if(!r.ok||x.error?.code!=='ok')throw new Error(x.error?.message||'Não foi possível consultar as permissões TikTok.');return x.data}
 // TikTok treats chunk_size as the size of every full chunk. Any trailing bytes
 // are appended to the final chunk, which must still be at least 5 MB.
-const chunkPlan=(size:number)=>{
- if(!Number.isSafeInteger(size)||size<=0)throw new Error('O arquivo de vídeo está vazio ou é grande demais.');
- if(size<5_000_000)return {chunkSize:size,count:1};
- const chunkSize=10_000_000;
- return {chunkSize,count:Math.floor(size/chunkSize)};
+const chunkPlan = (size: number) => {
+  if (!Number.isSafeInteger(size) || size <= 0) {
+    throw new Error("O vídeo é inválido.");
+  }
+
+  const chunkSize = Math.min(size, 10_000_000);
+
+  return {
+    chunkSize,
+    count: Math.ceil(size / chunkSize),
+  };
 };
 export async function publishTikTok(file:string,size:number,mime:string,metadata:PublishMetadata):Promise<PublicationResult>{const caption=text(metadata);if([...caption].length>2200)throw new Error('A legenda do TikTok ultrapassa o limite de 2200 caracteres.');const creator=await getTikTokCreatorInfo();const privacy=metadata.tiktokPrivacy||'SELF_ONLY';if(!creator.privacy_level_options.includes(privacy))throw new Error('A privacidade escolhida não está disponível para esta conta TikTok.');const token=await tiktokToken(),headers={Authorization:`Bearer ${token.accessToken}`,'Content-Type':'application/json; charset=UTF-8'},plan=chunkPlan(size);if(plan.count>1000)throw new Error('O vídeo excede o máximo de 1000 blocos aceito pelo TikTok.');const body = {
   post_info: {
