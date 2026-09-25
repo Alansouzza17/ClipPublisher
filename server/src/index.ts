@@ -44,7 +44,6 @@ export function buildApp(){const app=Fastify({logger:{level:'info',redact:['req.
     return res.redirect(`${config.frontendUrl}?connected=tiktok`);
   } catch (e) {
     app.log.error(e);
-
     return res
       .code(502)
       .type('text/plain')
