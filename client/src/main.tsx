@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { VideoItem, State } from './types';
 import './style.css';
@@ -9,7 +9,31 @@ const fmt = (n:number) => new Intl.NumberFormat('pt-BR',{style:'unit',unit:'mega
 const stateLabel: Record<State,string> = {idle:'Pronto', uploading:'Enviando…', publishing:'Publicando…', published:'Publicado', failed:'Falha ao publicar'};
 
 function App() {
-  const input = useRef<HTMLInputElement>(null); const [videos,setVideos]=useState<VideoItem[]>([]); const [drag,setDrag]=useState(false); const [notice,setNotice]=useState(''); const [confirm,setConfirm]=useState(false); const [bulk,setBulk]=useState({caption:'',mentions:'',hashtags:''}); const [visibility,setVisibility]=useState('SELF_ONLY');
+  const input = useRef<HTMLInputElement>(null); const [videos,setVideos]=useState<VideoItem[]>([]); const [drag,setDrag]=useState(false); const [notice,setNotice]=useState(''); const [confirm,setConfirm]=useState(false); const [bulk,setBulk]=useState({caption:'',mentions:'',hashtags:''}); const [visibility,setVisibility]=useState('SELF_ONLY');const [creator, setCreator] = useState<any>(null);
+  useEffect(() => {
+  async function loadCreator() {
+    try {
+      const r = await fetch(`${api}/tiktok/creator`);
+
+      if (!r.ok) {
+        setCreator(null);
+        return;
+      }
+
+      const data = await r.json();
+
+      setCreator(data);
+    } catch {
+      setCreator(null);
+    }
+  }
+
+  loadCreator();
+
+  if (window.location.search.includes("connected=tiktok")) {
+    window.history.replaceState({}, "", window.location.pathname);
+  }
+}, []);
   const update=(id:string, patch:Partial<VideoItem>)=>setVideos(x=>x.map(v=>v.id===id?{...v,...patch}:v));
   const add=(files:FileList|File[])=>{ const accepted=[...files].filter(f=>['video/mp4','video/quicktime'].includes(f.type)&&/\.(mp4|mov)$/i.test(f.name)); if(accepted.length!==files.length)setNotice('Apenas arquivos MP4 ou MOV são aceitos.'); setVideos(x=>[...x,...accepted.map(base)]); };
   const apply=()=>setVideos(x=>x.map(v=>({...v,...bulk,youtubeDescription:bulk.caption ? `${bulk.caption}${bulk.hashtags ? `\n${bulk.hashtags}`:''}`:v.youtubeDescription})));
@@ -17,7 +41,46 @@ function App() {
   const watchTikTok=async(id:string,publishId:string)=>{try{const r=await fetch(`${api}/tiktok/publish/${publishId}`),x=await r.json();if(!r.ok)throw new Error(x.message);if(x.status==='PUBLISH_COMPLETE')return update(id,{statusTikTok:'published'});if(x.status==='FAILED')return update(id,{statusTikTok:'failed',errorTikTok:x.fail_reason||'TikTok não concluiu a publicação.'});setTimeout(()=>watchTikTok(id,publishId),4000)}catch(e){update(id,{statusTikTok:'failed',errorTikTok:(e as Error).message})}};
   async function publish(video:VideoItem, platform:'tiktok'|'youtube') { update(video.id,platform==='tiktok'?{statusTikTok:'uploading',errorTikTok:undefined}:{statusYouTube:'uploading',errorYouTube:undefined}); const body=new FormData(); body.append('file',video.file); body.append('metadata',JSON.stringify({...video, tiktokPrivacy:visibility})); try { const r=await fetch(`${api}/publish/${platform}`,{method:'POST',body}); const result=await r.json(); if(!r.ok)throw new Error(result.message||'Não foi possível concluir a publicação.'); if(platform==='tiktok'){update(video.id,{statusTikTok:result.pending?'publishing':'published',tiktokUrl:result.url});if(result.publishId)void watchTikTok(video.id,result.publishId)}else update(video.id,{statusYouTube:'published',youtubeUrl:result.url}); } catch(e) { update(video.id,platform==='tiktok'?{statusTikTok:'failed',errorTikTok:(e as Error).message}:{statusYouTube:'failed',errorYouTube:(e as Error).message}); } }
   async function publishAll(){ setConfirm(false); const jobs=videos.flatMap(v=>[(v.publishToTikTok?publish(v,'tiktok'):null)].filter(Boolean) as Promise<void>[]); await Promise.allSettled(jobs); }
-  return <main><header><div><h1>ClipPublisher</h1><p>Publique seus vídeos no TikTok em poucos cliques.</p></div><div className="connections"><a href={`${api}/auth/tiktok/start`}>TikTok: conectar</a><nav className="legal-links"><a href="/terms/">Termos</a><a href="/privacy/">Privacidade</a></nav></div></header>
+  return <main><header><div><h1>ClipPublisher</h1><p>Publique seus vídeos no TikTok em poucos cliques.</p></div><div className="connections">
+
+    {creator ? (
+
+        <div className="connected-user">
+
+            <img
+                src={creator.creator_avatar_url}
+                alt={creator.creator_nickname}
+                className="avatar"
+            />
+
+            <div>
+
+                <strong>
+                    {creator.creator_nickname}
+                </strong>
+
+                <small>
+                    @{creator.creator_username}
+                </small>
+
+            </div>
+
+        </div>
+
+    ) : (
+
+        <a href={`${api}/auth/tiktok/start`}>
+            Conectar TikTok
+        </a>
+
+    )}
+
+    <nav className="legal-links">
+        <a href="/terms/">Termos</a>
+        <a href="/privacy/">Privacidade</a>
+    </nav>
+
+</div></header>
   {notice&&<p className="notice">{notice}</p>}<section className={`drop ${drag?'drag':''}`} onDragOver={e=>{e.preventDefault();setDrag(true)}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);add(e.dataTransfer.files)}} onClick={()=>input.current?.click()}><strong>Arraste seus vídeos aqui</strong><span>MP4 ou MOV · limite configurado no servidor</span><button type="button">Selecionar vídeos</button><input ref={input} hidden type="file" accept="video/mp4,video/quicktime,.mp4,.mov" multiple onChange={e=>e.target.files&&add(e.target.files)}/></section>
   {videos.length>0&&<><section className="panel bulk"><h2>Aplicar informações a todos</h2><label>Legenda<textarea value={bulk.caption} onChange={e=>setBulk({...bulk,caption:e.target.value})}/></label><label>Marcações<input placeholder="@perfil1 @perfil2" value={bulk.mentions} onChange={e=>setBulk({...bulk,mentions:e.target.value})}/></label><label>Hashtags<input placeholder="#cortes #viral #fyp" value={bulk.hashtags} onChange={e=>setBulk({...bulk,hashtags:e.target.value})}/></label><button onClick={apply}>Aplicar a todos</button><label>Visibilidade TikTok<select value={visibility} onChange={e=>setVisibility(e.target.value)}><option value="SELF_ONLY">Somente eu</option><option value="MUTUAL_FOLLOW_FRIENDS">Amigos</option><option value="PUBLIC_TO_EVERYONE">Público</option></select></label></section>
   <section className="videos">{videos.map(v=><article className="card" key={v.id}><img src={v.thumbnail}/><div className="card-head"><div><h3>{v.fileName}</h3><small>{fmt(v.file.size)}</small></div><button className="remove" onClick={()=>setVideos(x=>x.filter(a=>a.id!==v.id))}>Remover</button></div><label>Legenda<textarea value={v.caption} onChange={e=>update(v.id,{caption:e.target.value})}/></label><label>Marcações<input value={v.mentions} onChange={e=>update(v.id,{mentions:e.target.value})}/></label><label>Hashtags<input value={v.hashtags} onChange={e=>update(v.id,{hashtags:e.target.value})}/></label><label>Título do YouTube<input value={v.youtubeTitle} onChange={e=>update(v.id,{youtubeTitle:e.target.value})}/></label><label>Descrição<textarea value={v.youtubeDescription} onChange={e=>update(v.id,{youtubeDescription:e.target.value})}/></label><div className="checks"><label><input type="checkbox" checked={v.publishToTikTok} onChange={e=>update(v.id,{publishToTikTok:e.target.checked})}/> TikTok</label><label><input type="checkbox" checked={v.publishToYouTube} onChange={e=>update(v.id,{publishToYouTube:e.target.checked})}/> YouTube Shorts</label></div>{(['tiktok','youtube'] as const).map(p=>(p==='tiktok'?v.publishToTikTok:v.publishToYouTube)&&<div className={`status ${p==='tiktok'?v.statusTikTok:v.statusYouTube}`} key={p}><b>{p==='tiktok'?'TikTok':'YouTube'}</b>: {stateLabel[p==='tiktok'?v.statusTikTok:v.statusYouTube]} {(p==='tiktok'?v.tiktokUrl:v.youtubeUrl)&&<a href={p==='tiktok'?v.tiktokUrl:v.youtubeUrl} target="_blank">Abrir</a>} {(p==='tiktok'?v.statusTikTok:v.statusYouTube)==='failed'&&<><em>{p==='tiktok'?v.errorTikTok:v.errorYouTube}</em><button onClick={()=>publish(v,p)}>Tentar novamente</button></>}</div>)}</article>)}</section>
