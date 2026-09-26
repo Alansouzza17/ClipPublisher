@@ -10,7 +10,9 @@ const chunkPlan = (size: number) => {
     throw new Error("O vídeo é inválido.");
   }
 
-  const chunkSize = Math.min(size, 10_000_000);
+  // For a single upload, TikTok expects chunk_size to equal video_size.
+  // Use fixed 10 MB chunks only once the file exceeds the 64 MB chunk limit.
+  const chunkSize = size <= 64_000_000 ? size : 10_000_000;
 
   return {
     chunkSize,
