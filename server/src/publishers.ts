@@ -3,8 +3,8 @@ export interface CreatorInfo { creator_username:string; creator_nickname:string;
 export async function tiktokToken(){let t=await getTokens('tiktok');if(!t)throw new Error('TikTok não conectado.');if(t.expiryDate&&t.expiryDate<Date.now()+60_000&&t.refreshToken){const r=await fetch('https://open.tiktokapis.com/v2/oauth/token/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_key:config.tiktok.key,client_secret:config.tiktok.secret,grant_type:'refresh_token',refresh_token:t.refreshToken})});const x:any=await r.json();if(!r.ok||!x.access_token)throw new Error(x.error?.message||'Token do TikTok expirado; reconecte a conta.');t={accessToken:x.access_token,refreshToken:x.refresh_token||t.refreshToken,expiryDate:Date.now()+(x.expires_in||0)*1000};await saveTokens('tiktok',t)}return t}
 const text=(m:PublishMetadata)=>[m.caption,m.mentions,m.hashtags].filter(Boolean).join(' ').trim();
 export async function getTikTokCreatorInfo():Promise<CreatorInfo>{const token=await tiktokToken();const r=await fetch('https://open.tiktokapis.com/v2/post/publish/creator_info/query/',{method:'POST',headers:{Authorization:`Bearer ${token.accessToken}`,'Content-Type':'application/json; charset=UTF-8'}});const x:any=await r.json();if(!r.ok||x.error?.code!=='ok')throw new Error(x.error?.message||'Não foi possível consultar as permissões TikTok.');return x.data}
-// TikTok treats chunk_size as the size of every full chunk. Any trailing bytes
-// are appended to the final chunk, which must still be at least 5 MB.
+// TikTok treats chunk_size as the size of each chunk except the final chunk.
+// Trailing bytes are appended to that final chunk, so the count is floored.
 const chunkPlan = (size: number) => {
   if (!Number.isSafeInteger(size) || size <= 0) {
     throw new Error("O vídeo é inválido.");
@@ -14,7 +14,7 @@ const chunkPlan = (size: number) => {
 
   return {
     chunkSize,
-    count: Math.ceil(size / chunkSize),
+    count: Math.floor(size / chunkSize),
   };
 };
 export async function publishTikTok(file:string,size:number,mime:string,metadata:PublishMetadata):Promise<PublicationResult>{const caption=text(metadata);if([...caption].length>2200)throw new Error('A legenda do TikTok ultrapassa o limite de 2200 caracteres.');const creator=await getTikTokCreatorInfo();const privacy=metadata.tiktokPrivacy||'SELF_ONLY';if(!creator.privacy_level_options.includes(privacy))throw new Error('A privacidade escolhida não está disponível para esta conta TikTok.');const token=await tiktokToken(),headers={Authorization:`Bearer ${token.accessToken}`,'Content-Type':'application/json; charset=UTF-8'},plan=chunkPlan(size);if(plan.count>1000)throw new Error('O vídeo excede o máximo de 1000 blocos aceito pelo TikTok.');const body = {
