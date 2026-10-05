@@ -3,53 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Saiba como o ClipPublisher trata dados, tokens do TikTok e vídeos enviados para publicação." />
+<meta name="theme-color" content="#101b3b" />
 <title>Política de Privacidade — ClipPublisher</title>
+<link rel="icon" href="/clip-publisher-icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/clip-publisher-icon.png" />
 <style>
-body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:900px;margin:0 auto;padding:40px 20px;line-height:1.7;background:#0b1020;color:#eef2ff}
-a{color:#8ab4ff}h1,h2{line-height:1.25}header{margin-bottom:32px}section{margin:28px 0}footer{margin-top:48px;padding-top:24px;border-top:1px solid #29324a;color:#aab4ca}
+*{box-sizing:border-box}body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:960px;margin:0 auto;padding:30px 22px;line-height:1.7;background:#f5f7fc;color:#172033}a{color:#273f7c;font-weight:600}.site-nav{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:22px;border-bottom:1px solid #dce1ec}.brand{display:flex;align-items:center;gap:12px;color:#263d78;text-decoration:none;font-size:20px}.brand img{width:54px;height:54px}.site-nav nav,footer nav{display:flex;gap:18px;flex-wrap:wrap}header{margin:30px 0}h1,h2{line-height:1.25;color:#1b2d59}h1{font-size:34px;margin-bottom:8px}header p{color:#687087;margin:8px 0}section{margin:20px 0;padding:20px 22px;background:white;border:1px solid #e1e5ef;border-radius:13px}section h2{font-size:19px}section p{margin-bottom:0}footer{margin-top:36px;padding:22px 0;border-top:1px solid #dce1ec;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;color:#687087}
 </style>
 </head>
 <body>
-<header>
-<h1>Política de Privacidade</h1>
-<p><strong>ClipPublisher</strong></p>
-<p>Última atualização: 22 de setembro de 2026</p>
-</header>
-<section>
-<h2>1. Dados tratados</h2>
-<p>O ClipPublisher pode tratar dados necessários para autenticar e operar as integrações autorizadas pelo usuário, incluindo identificadores da conta conectada, tokens de acesso e informações retornadas pelas APIs das plataformas.</p>
-<p>Vídeos e metadados fornecidos pelo usuário são processados para executar a publicação solicitada.</p>
-</section>
-<section>
-<h2>2. Tokens de acesso</h2>
-<p>Os tokens de integração são armazenados no servidor de forma protegida e criptografada. Eles não são exibidos deliberadamente no navegador nem incluídos nos logs da aplicação.</p>
-</section>
-<section>
-<h2>3. Arquivos enviados</h2>
-<p>Os vídeos enviados são armazenados temporariamente no servidor durante o processamento da publicação. Arquivos temporários são destinados à execução da operação e podem ser removidos automaticamente após o período de retenção configurado.</p>
-</section>
-<section>
-<h2>4. Compartilhamento</h2>
-<p>O ClipPublisher envia dados e conteúdo somente quando necessário para executar a ação solicitada pelo usuário, como autorizar uma conta ou publicar um vídeo na plataforma escolhida. Não vendemos dados pessoais.</p>
-</section>
-<section>
-<h2>5. Serviços de terceiros</h2>
-<p>As integrações com TikTok e YouTube estão sujeitas às respectivas políticas de privacidade, termos de serviço e práticas de tratamento de dados dessas plataformas.</p>
-</section>
-<section>
-<h2>6. Segurança</h2>
-<p>São adotadas medidas técnicas para proteger credenciais e arquivos processados. Nenhum método de transmissão ou armazenamento eletrônico é absolutamente seguro, portanto não é possível garantir segurança absoluta.</p>
-</section>
-<section>
-<h2>7. Solicitações sobre dados</h2>
-<p>Solicitações relacionadas a acesso, correção, exclusão ou esclarecimentos sobre dados tratados pelo ClipPublisher devem ser encaminhadas ao responsável pelo serviço por seu canal de contato disponível.</p>
-</section>
-<section>
-<h2>8. Alterações</h2>
-<p>Esta política poderá ser atualizada para refletir mudanças no serviço, nas integrações ou na legislação aplicável. A data da última atualização será indicada no início desta página.</p>
-</section>
-<footer>
-<a href="/">Voltar ao ClipPublisher</a> · <a href="/terms/">Termos de Serviço</a>
-</footer>
+<nav class="site-nav" aria-label="Navegação principal"><a class="brand" href="/"><img src="/clip-publisher-icon.svg" alt="Ícone ClipPublisher"><strong>ClipPublisher</strong></a><nav aria-label="Páginas"><a href="/">ClipPublisher</a><a href="/privacy/" aria-current="page">Política de Privacidade</a><a href="/terms/">Termos de Serviço</a></nav></nav>
+<header><h1>Política de Privacidade</h1><p>Como os dados são tratados ao preparar e publicar vídeos pelo ClipPublisher.</p><p>Última atualização: 22 de setembro de 2026</p></header>
+<section><h2>1. Dados tratados</h2><p>O ClipPublisher trata dados necessários para autenticar e operar as integrações autorizadas pelo usuário, incluindo identificadores da conta conectada, tokens de acesso e informações retornadas pelas APIs das plataformas. Vídeos e metadados fornecidos pelo usuário são processados para executar a publicação solicitada.</p></section>
+<section><h2>2. Tokens de acesso</h2><p>Os tokens de integração são armazenados no servidor em arquivo criptografado com AES-256-GCM. Eles não são enviados ao navegador, e os campos de token são ocultados dos logs da aplicação.</p></section>
+<section><h2>3. Arquivos enviados</h2><p>Os vídeos são armazenados temporariamente no servidor durante o processamento. O sistema remove arquivos temporários com idade superior ao período configurado no servidor (24 horas por padrão). Um vídeo pode permanecer disponível enquanto o TikTok conclui o processamento ou para permitir nova tentativa após uma falha, sujeito à limpeza periódica.</p></section>
+<section><h2>4. Compartilhamento</h2><p>O ClipPublisher envia dados e conteúdo às plataformas conectadas somente quando necessário para executar a ação solicitada, como autorizar uma conta ou publicar um vídeo. Não vendemos dados pessoais.</p></section>
+<section><h2>5. Serviço de terceiros</h2><p>A integração de publicação com o TikTok está sujeita às políticas de privacidade, termos de serviço e práticas de tratamento de dados dessa plataforma.</p></section>
+<section><h2>6. Segurança</h2><p>São adotadas medidas técnicas para proteger credenciais e arquivos processados. Nenhum método de transmissão ou armazenamento eletrônico é absolutamente seguro, portanto não é possível garantir segurança absoluta.</p></section>
+<section><h2>7. Solicitações sobre dados</h2><p>O repositório do ClipPublisher não informa um endereço ou formulário de contato para solicitações sobre dados. As solicitações devem ser encaminhadas ao operador do serviço pelo canal que ele fornecer diretamente.</p></section>
+<section><h2>8. Alterações</h2><p>Esta política poderá ser atualizada para refletir mudanças no serviço, nas integrações ou na legislação aplicável. A data da última atualização será indicada no início desta página.</p></section>
+<footer><span>ClipPublisher</span><nav aria-label="Links legais"><a href="/">Página inicial</a><a href="/privacy/">Política de Privacidade</a><a href="/terms/">Termos de Serviço</a></nav></footer>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # ClipPublisher
 
-Aplicação pessoal para carregar MP4/MOV e publicar vídeos prontos no TikTok (Content Posting API / Direct Post) e no YouTube (YouTube Data API). Não há cadastro, banco de dados, IA, Instagram, scraping ou automação de navegador.
+Ferramenta atualmente operada em contexto privado para carregar MP4/MOV e publicar vídeos no TikTok (Content Posting API / Direct Post). Embora existam campos de interface e configuração relacionados ao YouTube, o servidor atual não implementa uma rota de conexão ou publicação para essa plataforma. Não há cadastro, banco de dados, IA, Instagram, scraping ou automação de navegador.
 
 ## Instalação e execução
 
@@ -29,17 +29,14 @@ Os tokens são criptografados localmente com AES-256-GCM no servidor; não são 
 
 O servidor usa OAuth oficial, consulta `creator_info/query`, chama `video/init` com `FILE_UPLOAD` e transmite o arquivo à `upload_url` retornada. A API exige `video.publish` aprovado e autorizado. Clientes não auditados ficam limitados à visibilidade privada; obtenha a auditoria antes de depender de publicação pública. Formato e limite final são os informados pelo `creator_info` e pela documentação do TikTok.
 
-## YouTube
+## YouTube (não disponível no servidor atual)
 
-1. No [Google Cloud Console](https://console.cloud.google.com/apis/credentials), crie um cliente OAuth do tipo Web e registre exatamente `GOOGLE_REDIRECT_URI`.
-2. Ative a [YouTube Data API v3](https://developers.google.com/youtube/v3) no mesmo projeto.
-3. Preencha as variáveis Google e clique em “YouTube: conectar”.
+O projeto contém campos de interface e helpers OAuth/configuração do Google, mas o servidor não expõe rotas para conectar uma conta YouTube nem para publicar vídeos nessa plataforma. As instruções anteriores sobre conexão e envio não se aplicam ao build atual.
 
-É usado somente o escopo `https://www.googleapis.com/auth/youtube.upload`, com acesso offline para renovação de token. O envio ocorre via [`videos.insert`](https://developers.google.com/youtube/v3/docs/videos/insert), incluindo título, descrição, tags derivadas apenas das hashtags fornecidas e visibilidade pública, não listada ou privada. O app não promete que um vídeo vertical será reconhecido como Short: essa classificação é do YouTube. Projetos OAuth não verificados criados depois de 28/07/2020 enviam vídeos como privados até auditoria.
 
 ## Segurança e limites
 
-Uploads aceitam exclusivamente MIME `video/mp4` e `video/quicktime`, extensão MP4/MOV e o limite configurável. Os nomes são sanitizados e os arquivos ficam em `storage/uploads` apenas durante a publicação. Um upload YouTube bem-sucedido é removido; um upload TikTok precisa ser preservado enquanto a plataforma processa, e falhas ficam disponíveis para retry na sessão. Em ambiente de produção, acrescente uma tarefa operacional para apagar arquivos temporários antigos depois de `TEMP_FILE_MAX_AGE_HOURS`.
+Uploads aceitam exclusivamente MIME `video/mp4` e `video/quicktime`, extensão MP4/MOV e o limite configurável. Os nomes são sanitizados e os arquivos ficam em `storage/uploads` durante a publicação. Um upload TikTok precisa ser preservado enquanto a plataforma processa; arquivos temporários são removidos periodicamente conforme `TEMP_FILE_MAX_AGE_HOURS`.
 
 O status TikTok é assíncrono: a resposta “enviando/publicando” representa o `publish_id`; implemente uma consulta periódica de `status/fetch` se quiser exibir o resultado final após sair da sessão. A URL pública do TikTok não é assumida, pois nem sempre é retornada pelo fluxo de Direct Post.
 
